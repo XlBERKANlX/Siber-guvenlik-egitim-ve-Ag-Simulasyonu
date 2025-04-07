@@ -38,11 +38,11 @@ const SiberTest = () => {
               <button className="option-button">D) Kelime 4</button>
             </div>
             <span className="frame-number">Frame 12</span>
-            <div className="navigation-buttons">
-              <button className="nav-button">Önceki Soru</button>
-              <button className="nav-button">Sonraki Soru</button>
-              <button className="nav-button">Testi Bitir</button>
-            </div>
+          </div>
+          <div className="navigation-buttons">
+            <button className="nav-button previous">Önceki Soru</button>
+            <button className="nav-button next">Sonraki Soru</button>
+            <button className="nav-button finish">Testi Bitir</button>
           </div>
         </div>
       </div>
