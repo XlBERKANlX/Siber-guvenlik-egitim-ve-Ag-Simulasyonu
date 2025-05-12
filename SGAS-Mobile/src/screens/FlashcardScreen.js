@@ -1,30 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
-import cardData from '../data/cardData';
+import { supabase } from '../api/supabaseClient';
 
 const { width } = Dimensions.get('window');
 
-export default function FlashcardScreen() {
-  const [cards, setCards] = useState(shuffleArray(cardData));
+export default function FlashcardScreen({ navigation }) {
+  const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lastTerm, setLastTerm] = useState('');
 
-  // Animasyon değerleri
   const rotateTop = useSharedValue(0);
   const rotateBottom = useSharedValue(0);
   const translateTop = useSharedValue(0);
   const translateBottom = useSharedValue(0);
 
-  function shuffleArray(array) {
-    return [...array].sort(() => Math.random() - 0.5);
-  }
+  useEffect(() => {
+    fetchFlashcards(); // Uygulama açıldığında verileri çek
+  }, []);
 
-  const reshuffle = () => {
-    setCards(shuffleArray(cardData));
+  const fetchFlashcards = async () => {
+    const { data, error } = await supabase.from('flashcards').select('*');
+    
+
+    if (error) {
+      console.error('Veri çekme hatası:', error.message);
+      return;
+    }
+    const shuffled = shuffleArray(data);
+    setCards(shuffled);
     setCurrentIndex(0);
     setLastTerm('');
+  };
+
+  const shuffleArray = (array) => {
+    return [...array].sort(() => Math.random() - 0.5);
+  };
+
+  const reshuffle = () => {
+    fetchFlashcards(); // Yeni rastgele liste al
     rotateTop.value = 0;
     rotateBottom.value = 0;
     translateTop.value = 0;
@@ -33,36 +48,26 @@ export default function FlashcardScreen() {
 
   const handleTopCardPress = () => {
     if (currentIndex < cards.length) {
-      // Önce AŞAĞI doğru kaydır (translateY +100)
       translateTop.value = withSpring(100);
-
       setTimeout(() => {
-        // Sonra 0.3sn sonra flip dön (rotateY -180)
         rotateTop.value = withTiming(-180, { duration: 400 });
       }, 300);
-
       setTimeout(() => {
-        // İçeriği değiştir
         setLastTerm(cards[currentIndex].term);
         setCurrentIndex((prev) => prev + 1);
         rotateTop.value = 0;
         translateTop.value = 0;
-      }, 800); // 0.3s + 0.4s toplamı = 0.7-0.8 saniye
+      }, 800);
     }
   };
 
   const handleBottomCardPress = () => {
     if (currentIndex > 0) {
-      // Önce YUKARI doğru kaydır (translateY -100)
       translateBottom.value = withSpring(-100);
-
       setTimeout(() => {
-        // Sonra 0.3sn sonra flip dön (rotateY 180)
         rotateBottom.value = withTiming(180, { duration: 400 });
       }, 300);
-
       setTimeout(() => {
-        // İçeriği değiştir
         const prevIndex = currentIndex - 1;
         setCurrentIndex(prevIndex);
         if (prevIndex > 0) {
@@ -78,7 +83,6 @@ export default function FlashcardScreen() {
 
   const currentCard = cards[currentIndex];
 
-  // Üst kart animasyonu
   const animatedTopStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: translateTop.value },
@@ -86,7 +90,6 @@ export default function FlashcardScreen() {
     ],
   }));
 
-  // Alt kart animasyonu
   const animatedBottomStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: translateBottom.value },
@@ -140,10 +143,16 @@ export default function FlashcardScreen() {
         <View style={styles.emptyCard} />
       )}
 
-      {/* Yeniden Dağıt */}
-      <TouchableOpacity onPress={reshuffle} style={styles.shuffleButton}>
-        <Text style={styles.shuffleText}>Yeniden Dağıt</Text>
-      </TouchableOpacity>
+      {/* Butonlar */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.menuButton}>
+          <Text style={styles.menuButtonText}>Ana Menü</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={reshuffle} style={styles.shuffleButton}>
+          <Text style={styles.shuffleText}>Yeniden Dağıt</Text>
+        </TouchableOpacity>
+      </View>
     </ImageBackground>
   );
 }
@@ -166,8 +175,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   cardTop: {
-    width: width * 0.7,
-    height: width * 0.7,
+    width: width * 0.65,
+    height: width * 0.65,
     marginBottom: 30,
     justifyContent: 'center',
     alignItems: 'center',
@@ -176,8 +185,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   cardBottom: {
-    width: width * 0.7,
-    height: width * 0.7,
+    width: width * 0.65,
+    height: width * 0.65,
     marginTop: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -199,21 +208,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emptyCard: {
-    width: width * 0.7,
-    height: width * 0.7,
+    width: width * 0.65,
+    height: width * 0.65,
     backgroundColor: '#0A6372',
     borderRadius: 25,
     marginVertical: 20,
     opacity: 0.6,
   },
-  shuffleButton: {
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
     marginTop: 30,
+  },
+  shuffleButton: {
     backgroundColor: '#06118B',
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 20,
   },
   shuffleText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  menuButton: {
+    backgroundColor: '#0735A9',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  menuButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,

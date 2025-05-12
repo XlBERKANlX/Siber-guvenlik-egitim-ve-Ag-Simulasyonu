@@ -29,7 +29,7 @@ export default function HomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('Test')}
+          onPress={() => navigation.navigate('LevelSelectScreen')} // 🟢 GÜNCELLENDİ
         >
           <Text style={styles.buttonText}>🧪 Test</Text>
         </TouchableOpacity>
